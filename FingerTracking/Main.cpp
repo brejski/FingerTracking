@@ -12,7 +12,7 @@ int main()
 	}
 	catch (std::runtime_error const& error)
 	{
-		std::cout << "Run time error " << error.what() << std::endl;
+		std::cout << "Run time error: " << error.what() << std::endl;
 	}
 	return 0;
 }
