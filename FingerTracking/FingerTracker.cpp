@@ -40,7 +40,7 @@ void FingerTracker::LoadInitialParamters()
 	m_roiSpanY = 50;
 	m_erosionSize = 1;
 	m_dilationSize = 2;
-	m_candidateDetecionConfidenceThreshold = 0.98;
+	m_candidateDetecionConfidenceThreshold = 0.98f;
 	m_backProjectionThreshold = 10;
 
 	m_calibrationBottomLowerThd = 60; //< Experiment 50-70
@@ -406,7 +406,7 @@ void FingerTracker::Process(Mat frame)
 	minMaxLoc(maskedOutScoreMap, &minVal, &maxVal, &minLoc, &maxLoc, Mat());
 	matchLoc = maxLoc + roi.tl();
 
-	m_currentCandidate.m_confidence = maxVal;
+	m_currentCandidate.m_confidence = static_cast<float>(maxVal);
 
 	if (maxVal > m_candidateDetecionConfidenceThreshold)
 	{
