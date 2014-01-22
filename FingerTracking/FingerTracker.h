@@ -43,6 +43,10 @@ private:
 	int		m_erosionSize, m_dilationSize;
 	float   m_candidateDetecionConfidenceThreshold;
 	int		m_backProjectionThreshold;
+	int		m_calibrationTopLowerThd, m_calibrationTopUpperThd;
+	int		m_calibrationMiddleLowerThd, m_calibrationMiddleUppperThd;
+	int		m_calibrationBottomLowerThd, m_calibrationBottomUpperThd;
+	int		m_calibrationDiffThreshold;
 	
 };
 

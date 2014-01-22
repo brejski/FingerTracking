@@ -42,6 +42,15 @@ void FingerTracker::LoadInitialParamters()
 	m_dilationSize = 2;
 	m_candidateDetecionConfidenceThreshold = 0.98;
 	m_backProjectionThreshold = 10;
+
+	m_calibrationBottomLowerThd = 60; //< Experiment 50-70
+	m_calibrationBottomUpperThd = 90;
+	m_calibrationMiddleLowerThd = 60;
+	m_calibrationMiddleUppperThd = 90;
+	m_calibrationTopLowerThd = 30;
+	m_calibrationTopUpperThd = 60;
+
+	m_calibrationDiffThreshold = 15;
 }
 
 void TrackBarCallback(int state, void* userdata)
@@ -83,7 +92,7 @@ void FingerTracker::Setup()
 	createTrackbar("Y", "RGB",  &Ypos, 240, TrackBarCallback, (void*)&update);
 	createTrackbar("Size", "RGB",  &windowSize, 100, TrackBarCallback, (void*)&update);
 	setMouseCallback("RGB", MouseCallback, (void*)&buttonClicked);
-	Mat fingerWindowBackground, fingerWindowBackgroundGray, fingerWindowBackgroundHSV;
+	Mat fingerWindowBackground, fingerWindowBackgroundGray;
 
 	m_calibrationData.reset(new CalibrationData());
 	bool ticking = false;
@@ -110,9 +119,9 @@ void FingerTracker::Setup()
 			{
 				frame(fingerWindow).copyTo(fingerWindowBackground);
 				cvtColor(fingerWindowBackground, fingerWindowBackgroundGray, CV_BGR2GRAY);
-				cvtColor(fingerWindowBackground, fingerWindowBackgroundHSV, CV_BGR2HSV);
 				buttonClicked  = 0;
 				update = 0;
+				cvDestroyAllWindows();
 			}
 
 			if (fingerWindowBackgroundGray.rows && !m_calibrationData->m_ready)
@@ -121,9 +130,9 @@ void FingerTracker::Setup()
 				absdiff(frame(fingerWindow), fingerWindowBackground, diff);
 				std::vector<Mat> ch;
 				split(diff, ch);
-				threshold(ch[0], ch[0], 20, 180, 0);
-				threshold(ch[1], ch[1], 20, 255, 0);
-				threshold(ch[2], ch[2], 20, 255, 0);
+				threshold(ch[0], ch[0], m_calibrationDiffThreshold, 255, 0);
+				threshold(ch[1], ch[1], m_calibrationDiffThreshold, 255, 0);
+				threshold(ch[2], ch[2], m_calibrationDiffThreshold, 255, 0);
 				thd = ch[0];
 				add(thd, ch[1], thd);
 				add(thd, ch[2], thd);
@@ -146,7 +155,7 @@ void FingerTracker::Setup()
 				bool bottomReady = false;
 
 				Scalar c1, c2, c3;
-				if (percentageTop > 30 && percentageTop < 60)
+				if (percentageTop > m_calibrationTopLowerThd && percentageTop < m_calibrationTopUpperThd)
 				{
 					topReady = true;
 					c1 = Scalar(0, 255, 255);
@@ -156,7 +165,7 @@ void FingerTracker::Setup()
 					c1 = Scalar(0, 0, 255);
 				}
 
-				if (percentageMiddle > 60 && percentageMiddle < 90)
+				if (percentageMiddle > m_calibrationMiddleLowerThd && percentageMiddle < m_calibrationMiddleUppperThd)
 				{
 					middleReady = true;					
 					c2 = Scalar(0, 255, 255);
@@ -166,7 +175,7 @@ void FingerTracker::Setup()
 					c2 = Scalar(0, 0, 255);
 				}
 
-				if (percentageBottom > 60 && percentageBottom < 90)
+				if (percentageBottom > m_calibrationBottomLowerThd && percentageBottom < m_calibrationBottomUpperThd)
 				{
 					bottomReady = true;
 					c3 = Scalar(0, 255, 255);
@@ -204,11 +213,11 @@ void FingerTracker::Setup()
 				cv::imshow("Thresholded", thd);
 #endif
 
-				if (percentageTop >= 60 && percentageBottom >= 90 && percentageMiddle >= 90)
+				if (percentageTop >= m_calibrationTopUpperThd && percentageBottom >= m_calibrationBottomUpperThd && percentageMiddle >= m_calibrationMiddleUppperThd)
 				{
 					putText(frame, "Move finger away from camera", Point(0, getTextSize("Move finger away from camera", 0, 0.5, 1, nullptr).height), 0, 0.5, Scalar::all(255), 1);
 				}
-				else if (percentageTop <= 30 && percentageBottom <=60 && percentageMiddle <= 60)
+				else if (percentageTop <= m_calibrationTopLowerThd && percentageBottom <= m_calibrationBottomLowerThd && percentageMiddle <= m_calibrationMiddleLowerThd)
 				{
 					putText(frame, "Move finger closer to camera", Point(0, getTextSize("Move finger closer to camera", 0, 0.5, 1, nullptr).height), 0, 0.5, Scalar::all(255), 1);
 				}
@@ -256,14 +265,15 @@ void FingerTracker::Setup()
 				rectangle(frame, r1.tl() + fingerWindow.tl(), r1.br() + fingerWindow.tl(), c1);
 				rectangle(frame, r2.tl() + fingerWindow.tl(), r2.br() + fingerWindow.tl(), c2);
 				rectangle(frame, r3.tl() + fingerWindow.tl(), r3.br() + fingerWindow.tl(), c3);
+				imshow("Calibration", frame);
 			}
 			else
 			{
 				int baseline = 0;
 				putText(frame, "Adjust calibration window, click when ready", Point(0, getTextSize("Adjust calibration window", 0, 0.4, 2, &baseline).height), 0, 0.4, Scalar::all(255), 1);
 				rectangle(frame, fingerWindow.tl(), fingerWindow.br(), Scalar(0, 0, 255));
-			}			
-			imshow("RGB", frame);
+				imshow("RGB", frame);
+			}
 			auto key = cvWaitKey(10);
 			if (char(key) == 27)
 			{
